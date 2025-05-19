@@ -26,57 +26,74 @@
     </form>
 
     <p id="uploadStatusMessage"></p>
-    
+
     <!-- Hidden iframe for form submission -->
     <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
 
     <script>
         // Replace with your actual Google Apps Script Web App URL
-        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbxc5v5GUvy8o7xVDBaFdfj6LxjWtl9uBg1e8fw7SiY3HYNiIzGe_8U_qQeA9_0i3O7wWw/exec';
-        
+        // Make sure this is the /exec URL from a *deployed* web app
+        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbynO_qcyCHmDEM1ZgXOUkZG7vTLeXojLDBKtiG7h7lnr_oO2Yzzc2WBKUhgDAY5kB3gZA/exec'; // <-- YOUR URL
+
         // Update the form's action attribute with the Google Apps Script URL
         document.getElementById('uploadForm').action = googleAppsScriptURL;
-        
+
         const form = document.getElementById('uploadForm');
         const messageArea = document.getElementById('uploadStatusMessage');
         const fileInput = document.getElementById('fileInput');
         const iframe = document.getElementById('hidden-iframe');
-        
+
         // Set up the iframe to handle the response
         iframe.addEventListener('load', function() {
             try {
                 // Try to get the response from the iframe
                 const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
-                const responseText = iframeContent.body.innerText || iframeContent.body.textContent;
-                
+                // Attempt to get text content from the body
+                const responseText = iframeContent && iframeContent.body ? (iframeContent.body.innerText || iframeContent.body.textContent) : '';
+
+                // If we got text content from the Apps Script response
                 if (responseText) {
                     messageArea.textContent = responseText;
+                    // Check if the response text contains the success phrase
                     if (responseText.includes("successfully")) {
                         messageArea.style.color = 'green';
-                        form.reset();
+                        form.reset(); // Clear the file input on success
                     } else {
+                        // Assume any other response is an error
                         messageArea.style.color = 'red';
                     }
                 } else {
-                    // If we couldn't get text, it might be cross-origin protection
-                    messageArea.textContent = 'Upload completed. Check your Google Drive folder.';
-                    messageArea.style.color = 'blue';
+                    // If no text content is found (common due to cross-origin restrictions),
+                    // assume the submission *might* have worked and provide a fallback message.
+                    // You can check the Apps Script logs for confirmation.
+                    messageArea.textContent = 'Upload request sent. Check your Google Drive folder and Apps Script logs.';
+                    messageArea.style.color = 'blue'; // Indicate processing or uncertain status
                 }
             } catch (e) {
-                // This catches cross-origin errors
-                messageArea.textContent = 'Upload request sent. Check your Google Drive folder.';
-                messageArea.style.color = 'blue';
+                // This catches scripting errors trying to access iframe content due to cross-origin restrictions
+                messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
+                messageArea.style.color = 'orange'; // Indicate potential issue reading response but request sent
+                Logger.log("Error reading iframe response: " + e); // Log this error in the browser console
+            } finally {
+                 // Reset the iframe src to prevent resubmission issues if needed,
+                 // although just letting it load the blank target is often sufficient.
+                 // iframe.src = 'about:blank';
             }
         });
-        
-        form.addEventListener('submit', function() {
-            messageArea.textContent = 'Uploading...';
-            messageArea.style.color = 'blue';
-        });
-    </script>
 
-</body>
-</html>
+        form.addEventListener('submit', function() {
+            messageArea.textContent = 'Uploading... Please wait.';
+            messageArea.style.color = 'blue';
+            // Optional: Disable the submit button to prevent multiple clicks
+            // form.querySelector('input[type="submit"]').disabled = true;
+        });
+
+        // Optional: Re-enable submit button after iframe load (if disabled on submit)
+        // iframe.addEventListener('load', function() {
+        //     form.querySelector('input[type="submit"]').disabled = false;
+        //     // ... rest of your iframe load logic ...
+        // });
+
     </script>
 
 </body>
