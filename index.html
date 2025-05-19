@@ -16,7 +16,8 @@
 </head>
 <body>
 
-    <form id="uploadForm" method="post" enctype="multipart/form-data" target="hidden-iframe">
+    <!-- *** MODIFIED: Removed target="hidden-iframe" *** -->
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
         <h1>Upload Files</h1>
         <p>Select one or more files you want to send to my Google Drive.</p>
 
@@ -28,61 +29,79 @@
 
     <p id="uploadStatusMessage"></p>
 
-    <!-- Hidden iframe for form submission -->
-    <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
+    <!-- *** REMOVED: The hidden iframe is no longer needed for fetch *** -->
+    <!-- <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe> -->
 
     <script>
         // Replace with your actual Google Apps Script Web App URL (from deployment)
         const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbyabyrrVUZxBD3SYuWMwmCmLHs5leYcKn5PZZKbD4q3l0hMDSqlBICBhj-hfSF5KFneBQ/exec'; // <-- VERIFY THIS URL
 
-        // Update the form's action attribute with the Google Apps Script URL
-        document.getElementById('uploadForm').action = googleAppsScriptURL;
+        // *** MODIFIED: Removed setting form.action as fetch handles the URL ***
+        // document.getElementById('uploadForm').action = googleAppsScriptURL;
 
         const form = document.getElementById('uploadForm');
         const messageArea = document.getElementById('uploadStatusMessage');
         const fileInput = document.getElementById('fileInput');
-        const iframe = document.getElementById('hidden-iframe');
-        const submitButton = form.querySelector('input[type="submit"]');
+        const submitButton = form.querySelector('input[type="submit понедельник"]);
 
-        // Set up the iframe to handle the response
-        iframe.addEventListener('load', function() {
-            submitButton.disabled = false; // Re-enable button after load
+        // *** REMOVED: Iframe event listener is no longer needed ***
+        // iframe.addEventListener('load', function() { ... });
 
-            try {
-                const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
-                const responseText = iframeContent && iframeContent.body ? (iframeContent.body.innerText || iframeContent.body.textContent) : '';
 
-                if (responseText) {
-                    messageArea.textContent = responseText;
-                    if (responseText.includes("uploaded successfully")) { // Look for the success phrase
-                         messageArea.style.color = 'green';
-                        form.reset(); // Clear file input
-                    } else {
-                        // Assume any other specific message is an error
-                        messageArea.style.color = 'red';
-                    }
-                } else {
-                    // Cross-origin restriction likely prevented reading response
-                    messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
-                    messageArea.style.color = 'orange'; // Indicate uncertain status
-                }
-            } catch (e) {
-                // Scripting error trying to access iframe content
-                messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
-                messageArea.style.color = 'orange'; // Indicate uncertain status
-                console.error("Error trying to read iframe response: ", e); // Log this error in the browser console
-            }
-        });
+        // *** MODIFIED: Use fetch API for submission ***
+        form.addEventListener('submit', async function(event) {
+            // Prevent the default form submission (which would cause page reload or use the removed iframe)
+            event.preventDefault();
 
-        form.addEventListener('submit', function() {
             if (fileInput.files.length === 0) {
                  messageArea.textContent = 'Please select at least one file.';
                  messageArea.style.color = 'red';
-                 return false; // Prevent form submission
+                 return; // Stop execution
             }
+
             messageArea.textContent = `Uploading ${fileInput.files.length} file(s)... Please wait.`;
             messageArea.style.color = 'blue';
             submitButton.disabled = true; // Disable button during upload
+
+            // Create FormData object to send the files
+            const formData = new FormData();
+            // Append each selected file to the FormData object
+            // The key 'myFiles' must match the parameter name expected by the Apps Script (e.parameter.myFiles)
+            for (const file of fileInput.files) {
+                formData.append('myFiles', file);
+            }
+
+            try {
+                // Send the request using fetch
+                const response = await fetch(googleAppsScriptURL, {
+                    method: 'POST',
+                    body: formData // FormData handles setting the correct Content-Type header
+                });
+
+                // Get the response text from the Apps Script
+                const responseText = await response.text();
+
+                // Display the message received from the Apps Script
+                messageArea.textContent = responseText;
+
+                // Check the response text for keywords to determine success/failure
+                if (responseText.includes("Successfully uploaded")) { // Look for the success phrase
+                    messageArea.style.color = 'green';
+                    form.reset(); // Clear file input on success
+                } else {
+                    // Assume any other specific message is an error (or partial success/failure)
+                    messageArea.style.color = 'red'; // Use red for any non-success message
+                }
+
+            } catch (error) {
+                // Handle errors during the fetch request itself (e.g., network issues, script not reachable)
+                console.error('Fetch Error:', error);
+                messageArea.textContent = 'An error occurred during upload. Check console for details.';
+                messageArea.style.color = 'red';
+            } finally {
+                // Re-enable the button regardless of success or failure
+                submitButton.disabled = false;
+            }
         });
     </script>
 
