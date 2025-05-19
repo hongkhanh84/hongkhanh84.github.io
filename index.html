@@ -17,12 +17,13 @@
 <body>
 
     <form id="uploadForm" method="post" enctype="multipart/form-data" target="hidden-iframe">
-        <h1>Upload a File</h1>
-        <p>Select the file you want to send to my Google Drive.</p>
+        <h1>Upload Files</h1>
+        <p>Select one or more files you want to send to my Google Drive.</p>
 
-        <input type="file" name="myFile" id="fileInput" required>
+        <!-- *** MODIFIED: Added 'multiple' attribute and changed 'name' to 'myFiles' *** -->
+        <input type="file" name="myFiles" id="fileInput" required multiple>
 
-        <input type="submit" value="Upload File">
+        <input type="submit" value="Upload File(s)">
     </form>
 
     <p id="uploadStatusMessage"></p>
@@ -31,9 +32,8 @@
     <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
 
     <script>
-        // Replace with your actual Google Apps Script Web App URL
-        // Make sure this is the /exec URL from a *deployed* web app
-        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbx1NMhGPYWuo-SojcwzZKL39coYzGCDp4-OxnnG8357tMhSQ-A1LbDLKOt1_8mEU0dskg/exec'; // <-- YOUR URL
+        // Replace with your actual Google Apps Script Web App URL (from deployment)
+        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbxc5v5GUvy8o7xVDBaFdfj6LxjWtl9uBg1e8fw7SiY3HYNiIzGe_8U_qQeA9_0i3O7wWw/exec'; // <-- VERIFY THIS URL
 
         // Update the form's action attribute with the Google Apps Script URL
         document.getElementById('uploadForm').action = googleAppsScriptURL;
@@ -42,58 +42,48 @@
         const messageArea = document.getElementById('uploadStatusMessage');
         const fileInput = document.getElementById('fileInput');
         const iframe = document.getElementById('hidden-iframe');
+        const submitButton = form.querySelector('input[type="submit"]');
 
         // Set up the iframe to handle the response
         iframe.addEventListener('load', function() {
+            submitButton.disabled = false; // Re-enable button after load
+
             try {
-                // Try to get the response from the iframe
                 const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
-                // Attempt to get text content from the body
                 const responseText = iframeContent && iframeContent.body ? (iframeContent.body.innerText || iframeContent.body.textContent) : '';
 
-                // If we got text content from the Apps Script response
                 if (responseText) {
                     messageArea.textContent = responseText;
-                    // Check if the response text contains the success phrase
-                    if (responseText.includes("successfully")) {
-                        messageArea.style.color = 'green';
-                        form.reset(); // Clear the file input on success
+                    if (responseText.includes("uploaded successfully")) { // Look for the success phrase
+                         messageArea.style.color = 'green';
+                        form.reset(); // Clear file input
                     } else {
-                        // Assume any other response is an error
+                        // Assume any other specific message is an error
                         messageArea.style.color = 'red';
                     }
                 } else {
-                    // If no text content is found (common due to cross-origin restrictions),
-                    // assume the submission *might* have worked and provide a fallback message.
-                    // You can check the Apps Script logs for confirmation.
-                    messageArea.textContent = 'Upload request sent. Check your Google Drive folder and Apps Script logs.';
-                    messageArea.style.color = 'blue'; // Indicate processing or uncertain status
+                    // Cross-origin restriction likely prevented reading response
+                    messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
+                    messageArea.style.color = 'orange'; // Indicate uncertain status
                 }
             } catch (e) {
-                // This catches scripting errors trying to access iframe content due to cross-origin restrictions
+                // Scripting error trying to access iframe content
                 messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
-                messageArea.style.color = 'orange'; // Indicate potential issue reading response but request sent
-                console.log("Error reading iframe response: " + e); // Log this error in the browser console
-            } finally {
-                 // Reset the iframe src to prevent resubmission issues if needed,
-                 // although just letting it load the blank target is often sufficient.
-                 // iframe.src = 'about:blank';
+                messageArea.style.color = 'orange'; // Indicate uncertain status
+                console.error("Error trying to read iframe response: ", e); // Log this error in the browser console
             }
         });
 
         form.addEventListener('submit', function() {
-            messageArea.textContent = 'Uploading... Please wait.';
+            if (fileInput.files.length === 0) {
+                 messageArea.textContent = 'Please select at least one file.';
+                 messageArea.style.color = 'red';
+                 return false; // Prevent form submission
+            }
+            messageArea.textContent = `Uploading ${fileInput.files.length} file(s)... Please wait.`;
             messageArea.style.color = 'blue';
-            // Optional: Disable the submit button to prevent multiple clicks
-            // form.querySelector('input[type="submit"]').disabled = true;
+            submitButton.disabled = true; // Disable button during upload
         });
-
-        // Optional: Re-enable submit button after iframe load (if disabled on submit)
-        // iframe.addEventListener('load', function() {
-        //     form.querySelector('input[type="submit"]').disabled = false;
-        //     // ... rest of your iframe load logic ...
-        // });
-
     </script>
 
 </body>
