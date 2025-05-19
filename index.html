@@ -1,80 +1,65 @@
+<!-- Index.html - This file is the web page the user sees -->
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
+<html>
+  <head>
+    <!-- 'base target="_top"' and 'meta viewport' are good practice for web apps -->
+    <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Web Của Tôi Trên GitHub Pages</title>
+    <title>File Upload</title>
     <style>
-        /* Bạn có thể thêm CSS tùy chỉnh ở đây */
-        body {
-            font-family: sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #007bff;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 0.9em;
-            color: #777;
-        }
+      /* Basic styling to make the page look decent */
+      body { font-family: sans-serif; margin: 20px; background-color: #f8f8f8; }
+      form {
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+      }
+      h1 { text-align: center; color: #333; margin-bottom: 20px; }
+      input[type="file"] {
+        display: block; /* Makes the input take its own line */
+        width: 100%; /* Makes it take the full width of the container */
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+      }
+       input[type="submit"] {
+        display: block; /* Makes the button take its own line */
+        width: 100%; /* Makes it take the full width */
+        background-color: #4CAF50; /* Green */
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease; /* Smooth transition on hover */
+      }
+      input[type="submit"]:hover {
+        background-color: #45a049;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- This form sends data back to the script when submitted -->
+    <form method="post" enctype="multipart/form-data">
+      <h1>Upload File to My Drive</h1>
+      <p>Please select the file you wish to upload:</p>
+      <!-- This is the file input. The 'name="myFile"' part is CRITICAL.
+           It MUST match 'e.parameter.myFile' in the Code.gs file. -->
+      <input type="file" name="myFile" required>
+      <br>
+      <input type="submit" value="Upload File">
+    </form>
 
-    <div class="container">
-        <h1>Chào Mừng Đến Với Trang Web Của Tôi!</h1>
-        <p>Đây là một trang web mẫu được host miễn phí trên GitHub Pages.</p>
-
-        <p>Bạn có thể chỉnh sửa file <code>index.html</code> này và thêm nội dung của riêng bạn (văn bản, hình ảnh, liên kết...).</p>
-
-        <p><strong>Các bước để trang web này hiển thị trên tên miền GitHub của bạn:</strong></p>
-        <ol>
-            <li>Lưu nội dung trên vào một file có tên <code>index.html</code>.</li>
-            <li>Tạo một repository mới trên GitHub (hoặc sử dụng một repository đã có).</li>
-            <li>Upload file <code>index.html</code> lên thư mục gốc (root) của repository, hoặc vào thư mục <code>/docs</code> (tùy thuộc cấu hình bạn muốn).</li>
-            <li>Vào phần Cài đặt (Settings) của repository của bạn, tìm mục "Pages".</li>
-            <li>Chọn branch mà bạn muốn GitHub Pages sử dụng (thường là <code>main</code> hoặc <code>master</code>). Chọn thư mục chứa code (<code>/ (root)</code> hoặc <code>/docs</code>). Lưu lại.</li>
-            <li>GitHub sẽ bắt đầu build trang web của bạn. Sau vài phút, bạn có thể truy cập trang web tại địa chỉ tương ứng với cấu hình GitHub Pages của bạn (thường là <code>tendangnhap.github.io</code> hoặc <code>tendangnhap.github.io/ten-cua-repository</code>).</li>
-        </ol>
-
-        <p>Để tìm hiểu thêm về GitHub Pages, hãy xem tài liệu chính thức:</p>
-        <p><a href="https://docs.github.com/en/pages/" target="_blank">Tài liệu GitHub Pages (Tiếng Anh)</a></p>
-
-        <h2>Về Tôi</h2>
-        <p>Bạn có thể thêm thông tin giới thiệu về bản thân, dự án của mình hoặc bất cứ điều gì bạn muốn chia sẻ.</p>
-
-        <!-- Thêm các phần khác tùy ý -->
-        <!-- <h3>Dự án của tôi:</h3>
-        <ul>
-            <li><a href="#">Dự án A</a></li>
-            <li><a href="#">Dự án B</a></li>
-        </ul> -->
-
-    </div>
-
-    <footer>
-        <p>© 2023 Tên Bạn Hoặc Tổ Chức Của Bạn. Bản quyền được bảo lưu.</p>
-    </footer>
-
-</body>
+    <script>
+      // You could add client-side JavaScript here later if you wanted
+      // progress bars or more dynamic page updates, but it's not needed for basic upload.
+    </script>
+  </body>
 </html>
