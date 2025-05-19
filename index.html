@@ -73,7 +73,7 @@
                 // This catches scripting errors trying to access iframe content due to cross-origin restrictions
                 messageArea.textContent = 'Upload request sent. Unable to read backend response directly. Check your Google Drive folder and Apps Script logs.';
                 messageArea.style.color = 'orange'; // Indicate potential issue reading response but request sent
-                Logger.log("Error reading iframe response: " + e); // Log this error in the browser console
+                console.log("Error reading iframe response: " + e); // Log this error in the browser console
             } finally {
                  // Reset the iframe src to prevent resubmission issues if needed,
                  // although just letting it load the blank target is often sufficient.
