@@ -1,90 +1,79 @@
-<!-- index.html - For Your GitHub Pages (AJAX/Fetch Method) -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>File Upload to Drive</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 80vh; flex-direction: column; }
         form { width: 100%; max-width: 500px; padding: 30px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #333; margin-bottom: 20px; }
         p { text-align: center; margin-bottom: 25px; color: #555; }
         input[type="file"] { display: block; width: calc(100% - 22px); padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
         input[type="submit"] { display: block; width: 100%; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1rem; transition: background-color 0.3s ease; }
         input[type="submit"]:hover { background-color: #0056b3; }
-        #uploadStatusMessage { margin-top: 15px; text-align: center; font-weight: bold; } /* Style for the message area */
+        #uploadStatusMessage { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- This form will be handled by JavaScript. Note NO 'action' attribute. -->
     <form id="uploadForm" method="post" enctype="multipart/form-data">
         <h1>Upload a File</h1>
         <p>Select the file you want to send to my Google Drive.</p>
 
-        <!-- This input field is for selecting the file. -->
-        <!-- The name="myFile" attribute is CRITICAL and MUST match e.parameter.myFile in the Apps Script Code.gs -->
-        <input type="file" name="myFile" required>
+        <input type="file" name="myFile" id="fileInput" required>
 
         <input type="submit" value="Upload File">
     </form>
 
-    <!-- This paragraph will display status messages to the user -->
     <p id="uploadStatusMessage"></p>
 
-    <!-- JavaScript code to handle the form submission -->
     <script>
-        // --- JavaScript to send the form data to the Apps Script URL asynchronously ---
-
-        // ** !!! IMPORTANT: REPLACE THIS PLACEHOLDER WITH YOUR ACTUAL GOOGLE APPS SCRIPT WEB APP URL !!! **
-        // Get this URL after deploying your Apps Script project.
+        // Replace with your actual Google Apps Script Web App URL
         const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbzfceGoBfg1Mfp_mWf4CLOcf-e2c1SCsrPiUQV-rm71NwaWi8HzdGwORG8obptr9aEwWA/exec';
-        // ** Example: const googleAppsScriptURL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/exec'; **
-
-
-        const form = document.getElementById('uploadForm'); // Get the form element using its ID
-        const messageArea = document.getElementById('uploadStatusMessage'); // Get the element where we'll show messages
-
-        // Add an event listener that triggers when the form is submitted
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault(); // *** Stop the browser from doing the default form submission (prevents page reload/navigation) ***
-
-            // Display a message indicating the upload is in progress
+        
+        const form = document.getElementById('uploadForm');
+        const messageArea = document.getElementById('uploadStatusMessage');
+        
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
             messageArea.textContent = 'Uploading...';
-            messageArea.style.color = 'blue'; // Set message color to blue while uploading
-
-            // Collect all the data from the form, including the file.
-            // FormData makes it easy to prepare the data for sending via fetch.
+            messageArea.style.color = 'blue';
+            
+            // Create a new FormData object from the form
             const formData = new FormData(form);
-
-            try {
-                // Use the browser's built-in fetch API to send a POST request
-                // to your Google Apps Script Web App URL in the background.
-                const response = await fetch(googleAppsScriptURL, {
-                    method: 'POST', // We need POST to trigger the doPost() function in the script
-                    body: formData  // The collected form data (including the file)
-                });
-
-                // Get the text response sent back by the Apps Script (this is the output from doPost)
-                const resultText = await response.text();
-
-                // Display the response message to the user
-                messageArea.textContent = resultText;
-
-                // Optional: Change message color and reset the form based on the response content
-                if (resultText.includes("successfully")) { // Check if the success message is in the response
-                    messageArea.style.color = 'green'; // Set message color to green for success
-                    form.reset(); // Clear the file selection input after a successful upload
+            
+            // Create a new XMLHttpRequest (more control than fetch for this case)
+            const xhr = new XMLHttpRequest();
+            
+            // Configure the request
+            xhr.open('POST', googleAppsScriptURL, true);
+            
+            // Set up event listeners for the XHR object
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Success!
+                    messageArea.textContent = xhr.responseText;
+                    if (xhr.responseText.includes("successfully")) {
+                        messageArea.style.color = 'green';
+                        form.reset();
+                    } else {
+                        messageArea.style.color = 'red';
+                    }
                 } else {
-                    messageArea.style.color = 'red'; // Assume it's an error message otherwise
+                    // Error
+                    messageArea.textContent = 'Upload failed. Server returned: ' + xhr.status;
+                    messageArea.style.color = 'red';
                 }
-
-            } catch (error) {
-                // Catch any errors that occurred during the fetch request itself (e.g., network issues, invalid URL)
-                console.error('Upload failed:', error); // Log the full error in the browser's developer console
-                messageArea.textContent = 'An unexpected error occurred: ' + error.message; // Show a user-friendly error message
-                messageArea.style.color = 'red'; // Set message color to red for errors
-            }
+            };
+            
+            xhr.onerror = function() {
+                messageArea.textContent = 'Upload failed. Network error occurred.';
+                messageArea.style.color = 'red';
+            };
+            
+            // Send the form data to the server
+            xhr.send(formData);
         });
     </script>
 
