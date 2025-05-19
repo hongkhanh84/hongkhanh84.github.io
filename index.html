@@ -16,7 +16,7 @@
 </head>
 <body>
 
-    <form id="uploadForm" method="post" enctype="multipart/form-data">
+    <form id="uploadForm" method="post" enctype="multipart/form-data" target="hidden-iframe">
         <h1>Upload a File</h1>
         <p>Select the file you want to send to my Google Drive.</p>
 
@@ -26,55 +26,57 @@
     </form>
 
     <p id="uploadStatusMessage"></p>
+    
+    <!-- Hidden iframe for form submission -->
+    <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
 
     <script>
         // Replace with your actual Google Apps Script Web App URL
-        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbzQlA-Udj-8EPaoQv_tlfUHh3PnZtFtMi05cZv5ArUly1tjsngKyLVZi2Q8rhrK5M_xrw/exec';
+        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbwCpEs7ZP7MuxdzKDUYqaCKguMpdbuv_rLZ6BbPTCtRqceHTB84H_CnKo3vsLitI1Cq5A/exec';
+        
+        // Update the form's action attribute with the Google Apps Script URL
+        document.getElementById('uploadForm').action = googleAppsScriptURL;
         
         const form = document.getElementById('uploadForm');
         const messageArea = document.getElementById('uploadStatusMessage');
+        const fileInput = document.getElementById('fileInput');
+        const iframe = document.getElementById('hidden-iframe');
         
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            messageArea.textContent = 'Uploading...';
-            messageArea.style.color = 'blue';
-            
-            // Create a new FormData object from the form
-            const formData = new FormData(form);
-            
-            // Create a new XMLHttpRequest (more control than fetch for this case)
-            const xhr = new XMLHttpRequest();
-            
-            // Configure the request
-            xhr.open('POST', googleAppsScriptURL, true);
-            
-            // Set up event listeners for the XHR object
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    // Success!
-                    messageArea.textContent = xhr.responseText;
-                    if (xhr.responseText.includes("successfully")) {
+        // Set up the iframe to handle the response
+        iframe.addEventListener('load', function() {
+            try {
+                // Try to get the response from the iframe
+                const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
+                const responseText = iframeContent.body.innerText || iframeContent.body.textContent;
+                
+                if (responseText) {
+                    messageArea.textContent = responseText;
+                    if (responseText.includes("successfully")) {
                         messageArea.style.color = 'green';
                         form.reset();
                     } else {
                         messageArea.style.color = 'red';
                     }
                 } else {
-                    // Error
-                    messageArea.textContent = 'Upload failed. Server returned: ' + xhr.status;
-                    messageArea.style.color = 'red';
+                    // If we couldn't get text, it might be cross-origin protection
+                    messageArea.textContent = 'Upload completed. Check your Google Drive folder.';
+                    messageArea.style.color = 'blue';
                 }
-            };
-            
-            xhr.onerror = function() {
-                messageArea.textContent = 'Upload failed. Network error occurred.';
-                messageArea.style.color = 'red';
-            };
-            
-            // Send the form data to the server
-            xhr.send(formData);
+            } catch (e) {
+                // This catches cross-origin errors
+                messageArea.textContent = 'Upload request sent. Check your Google Drive folder.';
+                messageArea.style.color = 'blue';
+            }
         });
+        
+        form.addEventListener('submit', function() {
+            messageArea.textContent = 'Uploading...';
+            messageArea.style.color = 'blue';
+        });
+    </script>
+
+</body>
+</html>
     </script>
 
 </body>
