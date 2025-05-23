@@ -1,109 +1,475 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>File Upload to Drive</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload to Drive</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 80vh; flex-direction: column; }
-        form { width: 100%; max-width: 500px; padding: 30px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; margin-bottom: 20px; }
-        p { text-align: center; margin-bottom: 25px; color: #555; }
-        input[type="file"] { display: block; width: calc(100% - 22px); padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
-        input[type="submit"] { display: block; width: 100%; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1rem; transition: background-color 0.3s ease; }
-        input[type="submit"]:hover { background-color: #0056b3; }
-        #uploadStatusMessage { margin-top: 15px; text-align: center; font-weight: bold; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #58a6ff, #f78166);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #8b949e;
+            font-size: 1.1rem;
+        }
+
+        .upload-area {
+            background: #161b22;
+            border: 2px dashed #30363d;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #58a6ff;
+            background: #0f1419;
+        }
+
+        .upload-area.dragover {
+            border-color: #58a6ff;
+            background: #0f1419;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #e6edf3;
+        }
+
+        .upload-subtext {
+            color: #8b949e;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3);
+        }
+
+        .upload-btn:hover {
+            background: linear-gradient(135deg, #2ea043, #238636);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(35, 134, 54, 0.4);
+        }
+
+        .file-list {
+            margin-top: 30px;
+        }
+
+        .file-item {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            border-color: #58a6ff;
+            background: #161b22;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        .file-details h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #e6edf3;
+        }
+
+        .file-details p {
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        .remove-btn {
+            background: transparent;
+            border: 1px solid #f85149;
+            color: #f85149;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #f85149;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #58a6ff, #a855f7);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-success {
+            background: rgba(35, 134, 54, 0.2);
+            border: 1px solid #238636;
+            color: #2ea043;
+        }
+
+        .status-error {
+            background: rgba(248, 81, 73, 0.2);
+            border: 1px solid #f85149;
+            color: #f85149;
+        }
+
+        .upload-all-btn {
+            background: linear-gradient(135deg, #58a6ff, #a855f7);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+        }
+
+        .upload-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+        }
+
+        .upload-all-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .uploading {
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Image Uploader</h1>
+            <p>Upload images to Google Drive with GitHub-style interface</p>
+        </div>
 
-    <!-- *** MODIFIED: Removed target="hidden-iframe" *** -->
-    <form id="uploadForm" method="post" enctype="multipart/form-data">
-        <h1>Upload Files</h1>
-        <p>Select one or more files you want to send to my Google Drive.</p>
+        <div class="upload-area" id="uploadArea">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <div class="upload-text">Drag and drop images here</div>
+            <div class="upload-subtext">or click to select files (PNG, JPG, GIF, WebP)</div>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Choose Files
+            </button>
+            <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
+        </div>
 
-        <!-- *** MODIFIED: Added 'multiple' attribute and changed 'name' to 'myFiles' *** -->
-        <input type="file" name="myFiles" id="fileInput" required multiple>
+        <div class="file-list" id="fileList"></div>
 
-        <input type="submit" value="Upload File(s)">
-    </form>
+        <button class="upload-all-btn" id="uploadAllBtn" onclick="uploadAllFiles()" disabled>
+            🚀 Upload All to Google Drive
+        </button>
 
-    <p id="uploadStatusMessage"></p>
-
-    <!-- *** REMOVED: The hidden iframe is no longer needed for fetch *** -->
-    <!-- <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe> -->
+        <div id="statusMessage"></div>
+    </div>
 
     <script>
-        // Replace with your actual Google Apps Script Web App URL (from deployment)
-        const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbyabyrrVUZxBD3SYuWMwmCmLHs5leYcKn5PZZKbD4q3l0hMDSqlBICBhj-hfSF5KFneBQ/exec'; // <-- VERIFY THIS URL
+        let selectedFiles = [];
+        let uploadInProgress = false;
 
-        // *** MODIFIED: Removed setting form.action as fetch handles the URL ***
-        // document.getElementById('uploadForm').action = googleAppsScriptURL;
-
-        const form = document.getElementById('uploadForm');
-        const messageArea = document.getElementById('uploadStatusMessage');
+        // Setup drag and drop
+        const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const submitButton = form.querySelector('input[type="submit понедельник"]);
+        const fileList = document.getElementById('fileList');
+        const uploadAllBtn = document.getElementById('uploadAllBtn');
+        const statusMessage = document.getElementById('statusMessage');
 
-        // *** REMOVED: Iframe event listener is no longer needed ***
-        // iframe.addEventListener('load', function() { ... });
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        fileInput.addEventListener('change', handleFileSelect);
 
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
 
-        // *** MODIFIED: Use fetch API for submission ***
-        form.addEventListener('submit', async function(event) {
-            // Prevent the default form submission (which would cause page reload or use the removed iframe)
-            event.preventDefault();
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
 
-            if (fileInput.files.length === 0) {
-                 messageArea.textContent = 'Please select at least one file.';
-                 messageArea.style.color = 'red';
-                 return; // Stop execution
-            }
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type.startsWith('image/')
+            );
+            
+            addFiles(files);
+        }
 
-            messageArea.textContent = `Uploading ${fileInput.files.length} file(s)... Please wait.`;
-            messageArea.style.color = 'blue';
-            submitButton.disabled = true; // Disable button during upload
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+        }
 
-            // Create FormData object to send the files
-            const formData = new FormData();
-            // Append each selected file to the FormData object
-            // The key 'myFiles' must match the parameter name expected by the Apps Script (e.parameter.myFiles)
-            for (const file of fileInput.files) {
-                formData.append('myFiles', file);
-            }
-
-            try {
-                // Send the request using fetch
-                const response = await fetch(googleAppsScriptURL, {
-                    method: 'POST',
-                    body: formData // FormData handles setting the correct Content-Type header
-                });
-
-                // Get the response text from the Apps Script
-                const responseText = await response.text();
-
-                // Display the message received from the Apps Script
-                messageArea.textContent = responseText;
-
-                // Check the response text for keywords to determine success/failure
-                if (responseText.includes("Successfully uploaded")) { // Look for the success phrase
-                    messageArea.style.color = 'green';
-                    form.reset(); // Clear file input on success
-                } else {
-                    // Assume any other specific message is an error (or partial success/failure)
-                    messageArea.style.color = 'red'; // Use red for any non-success message
+        function addFiles(files) {
+            files.forEach(file => {
+                if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push({
+                        file: file,
+                        id: Date.now() + Math.random(),
+                        progress: 0,
+                        status: 'pending'
+                    });
                 }
+            });
+            
+            updateFileList();
+            updateUploadButton();
+        }
 
-            } catch (error) {
-                // Handle errors during the fetch request itself (e.g., network issues, script not reachable)
-                console.error('Fetch Error:', error);
-                messageArea.textContent = 'An error occurred during upload. Check console for details.';
-                messageArea.style.color = 'red';
-            } finally {
-                // Re-enable the button regardless of success or failure
-                submitButton.disabled = false;
+        function updateFileList() {
+            fileList.innerHTML = selectedFiles.map(fileObj => `
+                <div class="file-item" data-id="${fileObj.id}">
+                    <div class="file-info">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21,15 16,10 5,21"/>
+                        </svg>
+                        <div class="file-details">
+                            <h4>${fileObj.file.name}</h4>
+                            <p>${formatFileSize(fileObj.file.size)} • ${fileObj.status}</p>
+                            ${fileObj.progress > 0 ? `
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${fileObj.progress}%"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        ${fileObj.status === 'completed' ? `
+                            <button class="action-btn">✓ Uploaded</button>
+                        ` : fileObj.status === 'uploading' ? `
+                            <button class="action-btn uploading">Uploading...</button>
+                        ` : `
+                            <button class="remove-btn" onclick="removeFile('${fileObj.id}')">×</button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(id) {
+            selectedFiles = selectedFiles.filter(f => f.id !== id);
+            updateFileList();
+            updateUploadButton();
+        }
+
+        function updateUploadButton() {
+            const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
+            uploadAllBtn.disabled = pendingFiles.length === 0 || uploadInProgress;
+            uploadAllBtn.textContent = uploadInProgress ? 
+                '⏳ Uploading...' : 
+                `🚀 Upload ${pendingFiles.length} file${pendingFiles.length !== 1 ? 's' : ''} to Google Drive`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type = 'success') {
+            statusMessage.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+            setTimeout(() => {
+                statusMessage.innerHTML = '';
+            }, 5000);
+        }
+
+        // Simulated upload function - Replace with actual Google Apps Script endpoint
+        async function uploadAllFiles() {
+            if (uploadInProgress) return;
+            
+            uploadInProgress = true;
+            updateUploadButton();
+            
+            const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
+            
+            for (let fileObj of pendingFiles) {
+                try {
+                    fileObj.status = 'uploading';
+                    updateFileList();
+                    
+                    // Simulate upload progress
+                    for (let progress = 0; progress <= 100; progress += 10) {
+                        fileObj.progress = progress;
+                        updateFileList();
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    
+                    // Here you would make the actual call to your Google Apps Script
+                    // const response = await uploadToGoogleDrive(fileObj.file);
+                    
+                    fileObj.status = 'completed';
+                    fileObj.progress = 100;
+                    updateFileList();
+                    
+                } catch (error) {
+                    fileObj.status = 'error';
+                    updateFileList();
+                    showStatus(`Failed to upload ${fileObj.file.name}: ${error.message}`, 'error');
+                }
             }
-        });
-    </script>
+            
+            uploadInProgress = false;
+            updateUploadButton();
+            
+            const completedCount = selectedFiles.filter(f => f.status === 'completed').length;
+            showStatus(`🎉 Successfully uploaded ${completedCount} file${completedCount !== 1 ? 's' : ''} to Google Drive!`);
+        }
 
+        // Function to upload to Google Apps Script (you'll need to implement this)
+        async function uploadToGoogleDrive(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Replace 'YOUR_SCRIPT_URL' with your actual Google Apps Script web app URL
+            const response = await fetch('YOUR_SCRIPT_URL', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+            
+            return await response.json();
+        }
+    </script>
 </body>
 </html>
