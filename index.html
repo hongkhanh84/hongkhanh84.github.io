@@ -251,6 +251,35 @@
             transform: none;
         }
 
+        .config-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #e6edf3;
+        }
+
+        .config-input {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -266,6 +295,17 @@
         <div class="header">
             <h1>📁 Image Uploader</h1>
             <p>Upload images to Google Drive with GitHub-style interface</p>
+        </div>
+
+        <div class="config-section">
+            <h3>🔧 Configuration</h3>
+            <input 
+                type="text" 
+                id="scriptUrl" 
+                class="config-input" 
+                placeholder="Enter your Google Apps Script Web App URL"
+                value="https://script.google.com/macros/s/AKfycbyr_7hAvMuJXVW3Y7rBseo2C1gP6HofGgu87j61tZF-42qvLAETRB4P4l6Clej1wBrH9Q/exec"
+            >
         </div>
 
         <div class="upload-area" id="uploadArea">
@@ -374,6 +414,8 @@
                             <button class="action-btn">✓ Uploaded</button>
                         ` : fileObj.status === 'uploading' ? `
                             <button class="action-btn uploading">Uploading...</button>
+                        ` : fileObj.status === 'error' ? `
+                            <button class="remove-btn" onclick="removeFile('${fileObj.id}')">✗ Failed</button>
                         ` : `
                             <button class="remove-btn" onclick="removeFile('${fileObj.id}')">×</button>
                         `}
@@ -411,14 +453,22 @@
             }, 5000);
         }
 
-        // Simulated upload function - Replace with actual Google Apps Script endpoint
+        // Upload function with better error handling and CORS support
         async function uploadAllFiles() {
             if (uploadInProgress) return;
+            
+            const scriptUrl = document.getElementById('scriptUrl').value.trim();
+            if (!scriptUrl) {
+                showStatus('Please enter your Google Apps Script URL', 'error');
+                return;
+            }
             
             uploadInProgress = true;
             updateUploadButton();
             
             const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
+            let successCount = 0;
+            let errorCount = 0;
             
             for (let fileObj of pendingFiles) {
                 try {
@@ -426,21 +476,25 @@
                     updateFileList();
                     
                     // Simulate upload progress
-                    for (let progress = 0; progress <= 100; progress += 10) {
+                    for (let progress = 0; progress <= 90; progress += 20) {
                         fileObj.progress = progress;
                         updateFileList();
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
                     
                     // Upload to Google Apps Script
-                    const response = await uploadToGoogleDrive(fileObj.file);
+                    const response = await uploadToGoogleDrive(fileObj.file, scriptUrl);
                     
                     fileObj.status = 'completed';
                     fileObj.progress = 100;
+                    successCount++;
                     updateFileList();
                     
                 } catch (error) {
+                    console.error('Upload error:', error);
                     fileObj.status = 'error';
+                    fileObj.progress = 0;
+                    errorCount++;
                     updateFileList();
                     showStatus(`Failed to upload ${fileObj.file.name}: ${error.message}`, 'error');
                 }
@@ -449,43 +503,55 @@
             uploadInProgress = false;
             updateUploadButton();
             
-            const completedCount = selectedFiles.filter(f => f.status === 'completed').length;
-            showStatus(`🎉 Successfully uploaded ${completedCount} file${completedCount !== 1 ? 's' : ''} to Google Drive!`);
+            if (successCount > 0) {
+                showStatus(`🎉 Successfully uploaded ${successCount} file${successCount !== 1 ? 's' : ''} to Google Drive!`);
+            }
+            if (errorCount > 0) {
+                showStatus(`❌ ${errorCount} file${errorCount !== 1 ? 's' : ''} failed to upload. Check console for details.`, 'error');
+            }
         }
 
-        // Function to upload to Google Apps Script
-        async function uploadToGoogleDrive(file) {
+        // Updated function to upload to Google Apps Script with better error handling
+        async function uploadToGoogleDrive(file, scriptUrl) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
-                    
-                    const payload = {
-                        fileName: file.name,
-                        fileData: base64Data,
-                        mimeType: file.type,
-                        fileSize: file.size
-                    };
-                    
-                    // Replace 'YOUR_SCRIPT_URL' with your actual Google Apps Script web app URL
-                    fetch('https://script.google.com/macros/s/AKfycbyr_7hAvMuJXVW3Y7rBseo2C1gP6HofGgu87j61tZF-42qvLAETRB4P4l6Clej1wBrH9Q/exec', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
+                reader.onload = async function(e) {
+                    try {
+                        const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
+                        
+                        const payload = {
+                            fileName: file.name,
+                            fileData: base64Data,
+                            mimeType: file.type,
+                            fileSize: file.size
+                        };
+                        
+                        // Use fetch with proper error handling
+                        const response = await fetch(scriptUrl, {
+                            method: 'POST',
+                            mode: 'cors', // Important for CORS
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        // Check if the response is ok
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
                         if (data.success) {
                             resolve(data);
                         } else {
                             reject(new Error(data.error || 'Upload failed'));
                         }
-                    })
-                    .catch(error => {
+                    } catch (error) {
                         reject(error);
-                    });
+                    }
                 };
                 
                 reader.onerror = function() {
